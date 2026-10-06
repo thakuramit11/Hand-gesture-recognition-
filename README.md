@@ -1,41 +1,69 @@
+## Project Overview
 
-# Hand Gesture Recognition System  
+This project is a **Hand Gesture Recognition system** built using Python, OpenCV, MediaPipe, and Machine Learning.
 
-This project is a **real-time hand gesture recognition system** built using **Python**, **OpenCV**, **MediaPipe**, and **scikit-learn**.  
-It detects hand landmarks from a webcam feed, collects data into CSV files, and trains a machine learning model to classify different gestures.  
+The system detects a hand through the webcam, extracts **21 hand landmarks**, and uses a trained Machine Learning model to recognize different hand gestures in real time.
 
----
+### How It Works
 
-## 🚀 Features  
-- Real-time **hand tracking** using MediaPipe.  
-- **Custom dataset collection** stored as CSV files.  
-- **Random Forest Classifier** for gesture recognition.  
-- Easily expandable to add more gestures with new training data.  
+Webcam
+   ↓
+OpenCV
+   ↓
+MediaPipe Hand Landmarker
+   ↓
+21 Hand Landmarks
+   ↓
+Landmark Normalization
+   ↓
+Machine Learning Model
+   ↓
+Gesture Prediction
+```
 
----
+### Supported Gestures
 
-## 🛠️ Technologies Used  
-- **Python**  
-- **OpenCV** – for computer vision  
-- **MediaPipe** – for hand landmark detection  
-- **scikit-learn** – for model training  
+The current model recognizes the following gestures:
 
----
+* ✊ Fist
+* 👌 OK
+* ✋ Open Palm
+* ✌️ Peace
+* 🤘 Rock
+* 👍 Thumbs Up
 
-## 📂 Project Workflow  
-1. **Collect Data** – Capture gesture data and save hand landmarks into CSV files.  
-2. **Train Model** – Use the collected dataset to train a Random Forest Classifier.  
-3. **Run Prediction** – Test the trained model in real-time with webcam input.  
+### Technologies Used
 
----
+* **Python** – Main programming language
+* **OpenCV** – Webcam access, image processing, and visualization
+* **MediaPipe** – Hand landmark detection
+* **NumPy** – Numerical calculations and landmark processing
+* **Pandas** – Dataset and CSV handling
+* **Scikit-learn** – Machine Learning models
+* **Joblib** – Saving and loading the trained model
 
-## 📌 Future Improvements  
-- Collect more gesture samples to improve accuracy.  
-- Add deep learning models (CNN) for better performance.  
-- Implement gesture-based applications (e.g., volume control, game controls).  
+### Machine Learning
 
----
+The project uses hand landmark coordinates as features.
 
-## 👤 Author  
-Developed by **Amit Thakur**  
+Each hand contains **21 landmarks**, and every landmark has:
 
+* X coordinate
+* Y coordinate
+* Z coordinate
+
+This gives:
+
+**21 × 3 = 63 features**
+
+The landmarks are normalized before being given to the Machine Learning model. This helps the model recognize gestures even when the hand changes position or distance from the camera.
+
+The current Random Forest model achieved approximately **91% accuracy on the test dataset**.
+
+### Project Goal
+
+The goal of this project is to understand the complete Machine Learning workflow:
+
+**Data Collection → Data Preprocessing → Feature Engineering → Model Training → Model Evaluation → Real-Time Prediction**
+
+This project is also being developed as a learning project to improve my practical understanding of Python, Computer Vision, and Machine Learning.
