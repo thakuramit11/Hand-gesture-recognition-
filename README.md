@@ -67,3 +67,47 @@ The goal of this project is to understand the complete Machine Learning workflow
 **Data Collection → Data Preprocessing → Feature Engineering → Model Training → Model Evaluation → Real-Time Prediction**
 
 This project is also being developed as a learning project to improve my practical understanding of Python, Computer Vision, and Machine Learning.
+
+
+## Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/thakuramit11/Hand-gesture-recognition-.git
+cd Hand-gesture-recognition-
+```
+
+### 2. Install Required Libraries
+
+Make sure Python is installed, then install the required packages:
+
+```bash
+pip install opencv-python mediapipe numpy pandas scikit-learn joblib
+```
+
+### 3. Run the Project
+
+To start real-time gesture recognition:
+
+```bash
+python gesture_recognition_ml.py
+```
+
+Make sure the following files are present in the project folder:
+
+* `gesture_model.pkl`
+* `hand_landmarker.task`
+
+### Controls
+
+* **Q** — Quit the application
+* **S** — Save a gesture sample during data collection
+
+## Future Improvements
+
+* Increase the number of training samples for each gesture.
+* Improve recognition accuracy in different lighting conditions.
+* Add more hand gestures.
+* Improve real-time prediction stability.
+* Add an "Unknown" class for unrecognized gestures.
