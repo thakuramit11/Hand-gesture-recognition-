@@ -65,19 +65,19 @@ def normalize_landmarks(row):
 # ==================================================
 # PREDICT GESTURE
 # ==================================================
+def predict_gesture(landmarks, threshold=0.65):
+    normalized_landmarks = normalize_landmarks(landmarks)
 
-def predict_gesture(landmarks):
+    probabilities = clf.predict_proba([normalized_landmarks])[0]
 
-    normalized_landmarks = normalize_landmarks(
-        landmarks
-    )
+    best_index = np.argmax(probabilities)
+    confidence = probabilities[best_index]
+    predicted_gesture = clf.classes_[best_index]
 
-    prediction = clf.predict(
-        [normalized_landmarks]
-    )
+    if confidence < threshold:
+        return "Unknown"
 
-    return prediction[0]
-
+    return predicted_gesture
 
 # ==================================================
 # MEDIAPIPE HAND LANDMARKER
@@ -376,57 +376,40 @@ with HandLandmarker.create_from_options(
         # =================================================
         # GESTURE HISTORY / SMOOTHING
         # =================================================
-
-        if detected_gesture:
-
-            gesture_history.append(
-                detected_gesture
-            )
-
-
-            # Keep only last 5 predictions
+        if detected_gesture == "Unknown":
+            gesture_history.clear()
+            current_gesture = "Unknown"
+        
+        elif detected_gesture:
+            gesture_history.append(detected_gesture)
+        
             if len(gesture_history) > HISTORY_LENGTH:
-
                 gesture_history.pop(0)
-
-
-            # ----------------------------------------------
-            # Check majority prediction
-            # ----------------------------------------------
-
-            if (
-                gesture_history.count(
-                    detected_gesture
+        
+            if gesture_history.count(detected_gesture) >= REQUIRED_COUNT:
+                current_gesture = detected_gesture
+        
+                # =================================================
+                # DISPLAY CURRENT GESTURE
+                # =================================================
+        
+                cv2.putText(
+        
+                    frame,
+        
+                    current_gesture,
+        
+                    (50, 50),
+        
+                    cv2.FONT_HERSHEY_SIMPLEX,
+        
+                    1.5,
+        
+                    (0, 0, 255),
+        
+                    3
                 )
-                >= REQUIRED_COUNT
-            ):
-
-                current_gesture = (
-                    detected_gesture
-                )
-
-
-        # =================================================
-        # DISPLAY CURRENT GESTURE
-        # =================================================
-
-        cv2.putText(
-
-            frame,
-
-            current_gesture,
-
-            (50, 50),
-
-            cv2.FONT_HERSHEY_SIMPLEX,
-
-            1.5,
-
-            (0, 0, 255),
-
-            3
-        )
-
+        
 
         # ------------------------------------------------
         # Display instructions
