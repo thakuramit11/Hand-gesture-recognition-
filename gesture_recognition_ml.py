@@ -4,9 +4,9 @@ import mediapipe as mp
 import joblib
 import numpy as np
 
-# =================================================
+# --------------------------------------------------
 # 1. LOAD TRAINED MACHINE LEARNING MODEL
-# =================================================
+# --------------------------------------------------
 
 clf = joblib.load("gesture_model.pkl")
 
@@ -14,18 +14,18 @@ print("Model loaded successfully.")
 print(f"Model type: {clf.__class__.__name__}")
 
 
-# =================================================
+# --------------------------------------------------
 # 2. NORMALIZE HAND LANDMARKS
-# =================================================
+# --------------------------------------------------
 
 def normalize_landmarks(landmarks):
     landmarks = np.array(landmarks, dtype=float).reshape(21, 3)
 
-    # Make wrist landmark the origin
+    # Make the wrist the reference point
     wrist = landmarks[0].copy()
     landmarks = landmarks - wrist
 
-    # Scale landmarks to reduce hand-size differences
+    # Scale landmarks to reduce the effect of hand size
     distances = np.linalg.norm(landmarks, axis=1)
     scale = np.max(distances)
 
@@ -35,9 +35,9 @@ def normalize_landmarks(landmarks):
     return landmarks.flatten()
 
 
-# =================================================
+# --------------------------------------------------
 # 3. PREDICT GESTURE AND CONFIDENCE
-# =================================================
+# --------------------------------------------------
 
 def predict_gesture(landmarks, threshold=0.65):
     normalized_landmarks = normalize_landmarks(landmarks)
@@ -46,17 +46,15 @@ def predict_gesture(landmarks, threshold=0.65):
 
     best_index = np.argmax(probabilities)
     confidence = float(probabilities[best_index])
-    predicted_gesture = clf.classes_[best_index]
+    predicted_gesture = str(clf.classes_[best_index])
 
-    if confidence < threshold:
-        return "Unknown", confidence
-
-    return str(predicted_gesture), confidence
+    # Reject predictions with low confidence
+    return predicted_gesture, confidence
 
 
-# =================================================
-# 4. MEDIAPIPE HAND LANDMARKER SETUP
-# =================================================
+# --------------------------------------------------
+# 4. CONFIGURE MEDIAPIPE HAND LANDMARKER
+# --------------------------------------------------
 
 BaseOptions = mp.tasks.BaseOptions
 HandLandmarker = mp.tasks.vision.HandLandmarker
@@ -75,9 +73,9 @@ options = HandLandmarkerOptions(
 )
 
 
-# =================================================
+# --------------------------------------------------
 # 5. OPEN WEBCAM
-# =================================================
+# --------------------------------------------------
 
 cap = cv2.VideoCapture(0)
 
@@ -85,13 +83,19 @@ if not cap.isOpened():
     print("Error: Could not open camera.")
     raise SystemExit
 
+# --------------------------------------------------
+# 6. GESTURE SMOOTHING SETTINGS
+# --------------------------------------------------
+
 gesture_history = []
+
 current_gesture = "Show your hand"
+current_confidence = 0.0
 
 HISTORY_LENGTH = 5
 REQUIRED_COUNT = 4
 
-# Hand landmark connections
+# Hand landmark connections for drawing
 connections = [
     (0, 1), (1, 2), (2, 3), (3, 4),
     (0, 5), (5, 6), (6, 7), (7, 8),
@@ -102,9 +106,9 @@ connections = [
 ]
 
 
-# =================================================
-# 6. REAL-TIME GESTURE RECOGNITION
-# =================================================
+# --------------------------------------------------
+# 7. REAL-TIME GESTURE RECOGNITION
+# --------------------------------------------------
 
 try:
     with HandLandmarker.create_from_options(options) as landmarker:
@@ -116,14 +120,9 @@ try:
                 print("Error: Could not read camera frame.")
                 break
 
-            # Mirror webcam image
+            # Mirror the webcam image
             frame = cv2.flip(frame, 1)
 
-            # Reset values for each frame
-            detected_gesture = ""
-            confidence = 0.0
-
-            # Convert BGR image to RGB
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             mp_image = mp.Image(
@@ -133,9 +132,9 @@ try:
 
             result = landmarker.detect(mp_image)
 
-            # -----------------------------------------
-            # HAND DETECTED
-            # -----------------------------------------
+            # ------------------------------------------
+            # 8. CHECK WHETHER A HAND IS DETECTED
+            # ------------------------------------------
 
             if result.hand_landmarks:
 
@@ -155,7 +154,7 @@ try:
                         -1
                     )
 
-                # Draw landmark connections
+                # Draw connections between landmarks
                 for start, end in connections:
                     x1 = int(hand_landmarks[start].x * w)
                     y1 = int(hand_landmarks[start].y * h)
@@ -171,7 +170,7 @@ try:
                         2
                     )
 
-                # Extract 21 landmarks × 3 coordinates
+                # Convert 21 landmarks into 63 values
                 landmarks = []
 
                 for lm in hand_landmarks:
@@ -182,45 +181,62 @@ try:
                     landmarks
                 )
 
-                # -------------------------------------
-                # GESTURE HISTORY / SMOOTHING
-                # -------------------------------------
+                # --------------------------------------
+                # 9. SMOOTH PREDICTIONS
+                # --------------------------------------
 
                 if detected_gesture == "Unknown":
+
                     gesture_history.clear()
+
                     current_gesture = "Unknown"
+                    current_confidence = confidence
 
                 else:
-                    gesture_history.append(detected_gesture)
 
+                    # Store gesture and its confidence together
+                    gesture_history.append(
+                        (detected_gesture, confidence)
+                    )
+
+                    # Keep only the latest five predictions
                     if len(gesture_history) > HISTORY_LENGTH:
                         gesture_history.pop(0)
 
-                    if (
-                        gesture_history.count(detected_gesture)
-                        >= REQUIRED_COUNT
-                    ):
+                    # Extract gesture names from history
+                    gesture_names = [
+                        item[0] for item in gesture_history
+                    ]
+
+                    # Require at least four matching predictions
+                    if gesture_names.count(
+                        detected_gesture
+                    ) >= REQUIRED_COUNT:
+
                         current_gesture = detected_gesture
 
-                # Display current prediction confidence
-                cv2.putText(
-                    frame,
-                    f"Confidence: {confidence:.0%}",
-                    (30, 90),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (255, 255, 255),
-                    2
-                )
+                        # Average confidence for the stable gesture
+                        matching_confidences = [
+                            score
+                            for name, score in gesture_history
+                            if name == current_gesture
+                        ]
+
+                        current_confidence = (
+                            sum(matching_confidences)
+                            / len(matching_confidences)
+                        )
 
             else:
-                # No hand found in this frame
+                # Reset when no hand is detected
                 gesture_history.clear()
-                current_gesture = "No hand detected"
 
-            # -----------------------------------------
-            # DISPLAY GESTURE
-            # -----------------------------------------
+                current_gesture = "No hand detected"
+                current_confidence = 0.0
+
+            # ------------------------------------------
+            # 10. DISPLAY RESULTS
+            # ------------------------------------------
 
             cv2.putText(
                 frame,
@@ -232,7 +248,16 @@ try:
                 2
             )
 
-            # Display instructions
+            cv2.putText(
+                frame,
+                f"Confidence: {current_confidence:.0%}",
+                (30, 90),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (255, 255, 255),
+                2
+            )
+
             cv2.putText(
                 frame,
                 "Press Q to quit",
@@ -245,6 +270,7 @@ try:
 
             cv2.imshow("ML Gesture Recognition", frame)
 
+            # Press Q to exit
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 
