@@ -180,7 +180,7 @@ try:
                 detected_gesture, confidence = predict_gesture(
                     landmarks
                 )
-
+                
                 # --------------------------------------
                 # 9. SMOOTH PREDICTIONS
                 # --------------------------------------
